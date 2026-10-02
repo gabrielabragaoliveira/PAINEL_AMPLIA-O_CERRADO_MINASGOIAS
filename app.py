@@ -6,7 +6,6 @@ import base64
 # 1. Configuração inicial da página
 st.set_page_config(
     page_title="Obras Ampliação",
-    page_icon="🚧",
     layout="wide"
 )
 
@@ -18,7 +17,7 @@ def carregar_css(arquivo_css):
 try:
     carregar_css("style.css")
 except FileNotFoundError:
-    st.warning("Ficheiro style.css não encontrado.")
+    pass # Ignora silenciosamente se o CSS ainda não estiver na pasta
 
 # 3. Função para carregar imagens locais para o HTML
 def get_base64_of_bin_file(bin_file):
@@ -26,7 +25,7 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# Tenta carregar as imagens. Se não encontrar, fica em branco para não quebrar a aplicação
+# Tenta carregar as imagens das logos
 img_minas_goias = ""
 img_cerrado = ""
 
@@ -36,7 +35,7 @@ if os.path.exists("Ecovias Minas Goias_Logo (1).png"):
 if os.path.exists("Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png"):
     img_cerrado = f"data:image/png;base64,{get_base64_of_bin_file('Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png')}"
 
-# Renderizando o Cabeçalho Superior com as imagens
+# Renderizando o Cabeçalho Superior com as imagens reais
 st.markdown(f"""
     <div class="cabecalho">
         <h1>OBRAS AMPLIAÇÃO</h1>
@@ -53,25 +52,19 @@ st.sidebar.markdown("### PAINEL DE CONTROLE")
 concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
 estado = st.sidebar.selectbox("ESTADO / REGIÃO", ["Minas", "Goiás", "Contorno Uberlândia"])
 
-# Exibição INFORMATIVA dos limites do trecho (apenas texto, não é um input)
-st.sidebar.markdown("---")
-st.sidebar.markdown("**LIMITES DO TRECHO:**")
-
+# Define os limites apenas para o tooltip (ajuda visual do campo KM)
+dica_km = "Digite o KM desejado."
 if concessao == "Minas Goiás":
     if estado == "Minas":
-        st.sidebar.info("KM 207+300 ao 77+400\n\nKM 65+473 ao 00+000")
+        dica_km = "Limites: KM 207+300 ao 77+400 e KM 65+473 ao 00+000"
     elif estado == "Goiás":
-        st.sidebar.info("KM 314+000 ao 95+700")
+        dica_km = "Limites: KM 314+000 ao 95+700"
     elif estado == "Contorno Uberlândia":
-        st.sidebar.info("KM 00+000 ao 21+000")
-elif concessao == "Cerrado":
-    st.sidebar.info("Limites não especificados.")
-    
-st.sidebar.markdown("---")
+        dica_km = "Limites: KM 00+000 ao 21+000"
 
-# Inputs de OBRA e KM
+# Inputs reordenados (KM sobe, OBRA desce)
+km = st.sidebar.text_input("KM", placeholder="Ex: 120+500", help=dica_km)
 obra = st.sidebar.text_input("OBRA", placeholder="Digite a obra...")
-km = st.sidebar.text_input("KM", placeholder="Ex: 120+500")
 
 # 5. Integração com os dados do BI - AMPLIAÇÃO
 @st.cache_data
@@ -94,7 +87,7 @@ df = carregar_dados()
 
 # 6. Área Central (Exibição)
 st.write("### Resumo do Filtro Atual")
-st.success(f"**Concessão:** {concessao} | **Estado:** {estado} | **Obra:** {obra if obra else 'Não informada'} | **KM:** {km if km else 'Não informado'}")
+st.success(f"**Concessão:** {concessao} | **Estado:** {estado} | **KM:** {km if km else 'Não informado'} | **Obra:** {obra if obra else 'Não informada'}")
 
 st.divider()
 
