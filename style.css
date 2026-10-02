@@ -58,3 +58,17 @@ div[data-baseweb="select"] > div {
     color: black !important;
     border-radius: 5px;
 }
+/* Estilo das imagens dos logos no cabeçalho */
+.logos {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.logo-img {
+    height: 50px; /* Ajuste a altura conforme necessário para caber bem no cabeçalho */
+    object-fit: contain;
+    background-color: white; /* Fundo branco para destacar o logo verde no fundo verde */
+    padding: 5px 15px;
+    border-radius: 25px;
+}
