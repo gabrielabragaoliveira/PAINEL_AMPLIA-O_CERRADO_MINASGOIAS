@@ -6,6 +6,7 @@ import base64
 # 1. Configuração inicial da página
 st.set_page_config(
     page_title="Obras Ampliação",
+    page_icon="🚧",
     layout="wide"
 )
 
@@ -50,9 +51,16 @@ st.markdown(f"""
 st.sidebar.markdown("### PAINEL DE CONTROLE")
 
 concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
-estado = st.sidebar.selectbox("ESTADO / REGIÃO", ["Minas", "Goiás", "Contorno Uberlândia"])
 
-# Define os limites apenas para o tooltip (ajuda visual do campo KM)
+# Lógica dinâmica: Contorno Uberlândia aparece APENAS na concessão Minas Goiás
+if concessao == "Minas Goiás":
+    opcoes_estado = ["Minas", "Goiás", "Contorno Uberlândia"]
+else:
+    opcoes_estado = ["Minas", "Goiás"]
+
+estado = st.sidebar.selectbox("ESTADO / REGIÃO", opcoes_estado)
+
+# Define os limites apenas para o tooltip (ajuda visual do campo KM - ícone de '?')
 dica_km = "Digite o KM desejado."
 if concessao == "Minas Goiás":
     if estado == "Minas":
@@ -62,7 +70,7 @@ if concessao == "Minas Goiás":
     elif estado == "Contorno Uberlândia":
         dica_km = "Limites: KM 00+000 ao 21+000"
 
-# Inputs reordenados (KM sobe, OBRA desce)
+# Inputs reordenados (KM em cima, OBRA em baixo)
 km = st.sidebar.text_input("KM", placeholder="Ex: 120+500", help=dica_km)
 obra = st.sidebar.text_input("OBRA", placeholder="Digite a obra...")
 
