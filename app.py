@@ -92,8 +92,8 @@ with aba_resumo:
 
 # --- ABA 2: CERRADO (ECC) ---
 with aba_cerrado:
-    st.write("### Conteúdo Específico: Cerrado (ECC)")
-    st.info("👈 Faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral.")
+    # Chama a função que criamos no planilhas.py, injetando o ficheiro carregado
+    planilhas.renderizar_cerrado(arquivo_upado)
 
 # --- ABA 3: MINAS GOIÁS (EMG) ---
 with aba_minas:
