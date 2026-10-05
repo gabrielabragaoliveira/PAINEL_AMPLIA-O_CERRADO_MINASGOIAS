@@ -41,13 +41,57 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. Navegação Principal (Abas Horizontais)
+# 3. Barra Lateral (PAINEL DE CONTROLE) Retomada
+st.sidebar.markdown("### PAINEL DE CONTROLE")
+
+concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
+
+if concessao == "Minas Goiás":
+    opcoes_estado = ["Minas", "Goiás", "Contorno Uberlândia"]
+else:
+    opcoes_estado = ["Minas", "Goiás"]
+
+estado = st.sidebar.selectbox("ESTADO / REGIÃO", opcoes_estado)
+
+dica_km = "Digite o KM desejado."
+if concessao == "Minas Goiás":
+    if estado == "Minas":
+        dica_km = "Limites: KM 207+300 ao 77+400 e KM 65+473 ao 00+000"
+    elif estado == "Goiás":
+        dica_km = "Limites: KM 314+000 ao 95+700"
+    elif estado == "Contorno Uberlândia":
+        dica_km = "Limites: KM 00+000 ao 21+000"
+
+km = st.sidebar.text_input("KM", placeholder="Ex: 120+500", help=dica_km)
+obra = st.sidebar.text_input("OBRA", placeholder="Digite a obra...")
+
+# Upload do Arquivo de Dados
+st.sidebar.markdown("---")
+st.sidebar.markdown("**BASE DE DADOS:**")
+arquivo_upado = st.sidebar.file_uploader("Upload do BI - AMPLIAÇÃO", type=["xlsx", "xls", "csv"])
+
+@st.cache_data
+def processar_arquivo(upload):
+    if upload is not None:
+        try:
+            if upload.name.endswith('.csv'):
+                df = pd.read_csv(upload)
+            else:
+                df = pd.read_excel(upload)
+            return df
+        except Exception as e:
+            st.sidebar.error(f"Erro ao processar: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+df = processar_arquivo(arquivo_upado)
+
+# 4. Navegação Principal (Abas Horizontais)
 aba_resumo, aba_cerrado, aba_minas = st.tabs(["QUADRO DE RESUMO", "CERRADO (ECC)", "MINAS GOIÁS (EMG)"])
 
 # --- ABA 1: QUADRO DE RESUMO ---
 with aba_resumo:
     st.subheader("RESUMO")
-    
     col_esquerda, col_direita = st.columns([2, 1])
     
     with col_esquerda:
@@ -70,28 +114,18 @@ with aba_resumo:
 
     # --- SEÇÃO DO MAPA ---
     st.subheader("MAPA DE OBRAS")
-    
     col_mapa, col_menu_mapa = st.columns([3, 1])
     
     with col_mapa:
         st.markdown('<div class="caixa-verde-clara" style="height: 500px; display:flex; align-items:center; justify-content:center;">', unsafe_allow_html=True)
         
-        # Alterado para receber GeoJSON
         arquivo_geo = st.file_uploader("Upload Traçado (GeoJSON)", type=["geojson", "json"], key="geo_resumo")
-        
         mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6)
         
         if arquivo_geo:
             try:
-                # Carrega nativamente pelo JSON do Python (sem Geopandas)
                 geo_data = json.load(arquivo_geo)
-                folium.GeoJson(
-                    geo_data,
-                    style_function=lambda feature: {
-                        'color': '#179C33',
-                        'weight': 3,
-                    }
-                ).add_to(mapa)
+                folium.GeoJson(geo_data, style_function=lambda feature: {'color': '#179C33', 'weight': 3}).add_to(mapa)
                 st.success("Mapa renderizado com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao processar o arquivo: {e}")
@@ -104,17 +138,22 @@ with aba_resumo:
             <div class="menu-lateral-mapa">
                 <div style="text-align: right; color: white;">☰</div>
                 <br><br>
-                <i>[CONSTRUIR PAINEL DE NAVEGAÇÃO DESSA ABA - ABA RETRÁTIL]</i>
+                <i>[MENU DO MAPA]</i>
             </div>
         """, unsafe_allow_html=True)
-
 
 # --- ABA 2: CERRADO (ECC) ---
 with aba_cerrado:
     st.write("### Conteúdo Específico: Cerrado (ECC)")
-    st.info("Aqui entrarão os dados filtrados apenas para a concessão Cerrado da planilha BI - AMPLIAÇÃO.")
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Faça o upload da base de dados na barra lateral.")
 
 # --- ABA 3: MINAS GOIÁS (EMG) ---
 with aba_minas:
     st.write("### Conteúdo Específico: Minas Goiás (EMG)")
-    st.info("Aqui entrarão os dados filtrados apenas para a concessão Minas Goiás da planilha BI - AMPLIAÇÃO.")
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Faça o upload da base de dados na barra lateral.")
