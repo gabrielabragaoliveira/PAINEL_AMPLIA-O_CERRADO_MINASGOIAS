@@ -1,8 +1,8 @@
 import streamlit as st
-import pandas as pd
 import os
 import base64
 import maps
+import planilhas # Importa o novo módulo de dados
 
 # 1. Configuração inicial da página
 st.set_page_config(
@@ -50,7 +50,6 @@ st.sidebar.markdown("### PAINEL DE CONTROLE")
 
 concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
 
-# Lógica dinâmica: Contorno Uberlândia aparece APENAS na concessão Minas Goiás
 if concessao == "Minas Goiás":
     opcoes_estado = ["Minas", "Goiás", "Contorno Uberlândia"]
 else:
@@ -58,7 +57,6 @@ else:
 
 estado = st.sidebar.selectbox("ESTADO / REGIÃO", opcoes_estado)
 
-# Tooltip dinâmico para os limites do KM
 dica_km = "Digite o KM desejado."
 if concessao == "Minas Goiás":
     if estado == "Minas":
@@ -76,65 +74,28 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("**BASE DE DADOS:**")
 arquivo_upado = st.sidebar.file_uploader("Upload do BI - AMPLIAÇÃO", type=["xlsx", "xls", "csv"])
 
-# Processamento dos dados na memória
-@st.cache_data
-def processar_arquivo(upload):
-    if upload is not None:
-        try:
-            if upload.name.endswith('.csv'):
-                df = pd.read_csv(upload)
-            else:
-                df = pd.read_excel(upload)
-            return df
-        except Exception as e:
-            st.sidebar.error(f"Erro ao processar a planilha: {e}")
-            return pd.DataFrame()
-    return pd.DataFrame()
-
-df = processar_arquivo(arquivo_upado)
 
 # 5. Navegação Principal (Abas Horizontais)
 aba_resumo, aba_cerrado, aba_minas = st.tabs(["QUADRO DE RESUMO", "CERRADO (ECC)", "MINAS GOIÁS (EMG)"])
 
 # --- ABA 1: QUADRO DE RESUMO ---
 with aba_resumo:
-    st.subheader("RESUMO")
-    col_esquerda, col_direita = st.columns([2, 1])
     
-    with col_esquerda:
-        st.markdown('<div class="caixa-verde-clara" style="height: 400px; display:flex; align-items:center; justify-content:center;"><i>[INSERIR GRÁFICOS DE RESUMO AQUI]</i></div>', unsafe_allow_html=True)
-
-    with col_direita:
-        st.markdown('<div class="titulo-verde">EM ANDAMENTO</div>', unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        with c1: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
-        with c2: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
-        
-        st.write("") # Espaçamento
-        
-        st.markdown('<div class="titulo-verde">PREVISTO A INICIAR</div>', unsafe_allow_html=True)
-        c3, c4 = st.columns(2)
-        with c3: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
-        with c4: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
+    # Chama o layout de gráficos do planilhas.py e passa o ficheiro para ele
+    planilhas.renderizar_resumo(arquivo_upado)
 
     st.divider()
 
     # --- SEÇÃO DO MAPA ---
-    # A estrutura visual do mapa e do menu lateral agora é gerida integralmente pelo maps.py
+    # Chama a estrutura visual do mapa e do menu lateral gerida pelo maps.py
     maps.renderizar_painel_mapa()
 
 # --- ABA 2: CERRADO (ECC) ---
 with aba_cerrado:
     st.write("### Conteúdo Específico: Cerrado (ECC)")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
+    st.info("👈 Faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral.")
 
 # --- ABA 3: MINAS GOIÁS (EMG) ---
 with aba_minas:
     st.write("### Conteúdo Específico: Minas Goiás (EMG)")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
+    st.info("👈 Faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral.")
