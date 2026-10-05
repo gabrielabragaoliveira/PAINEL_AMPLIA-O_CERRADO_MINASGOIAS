@@ -1,42 +1,40 @@
 import streamlit as st
 import pandas as pd
+import folium
+from streamlit_folium import st_folium
+import geopandas as gpd
+import fiona
 import os
 import base64
 
-# 1. Configuração inicial da página
-st.set_page_config(
-    page_title="Obras Ampliação",
-    page_icon="🚧",
-    layout="wide"
-)
+# Habilita suporte KML
+fiona.drvsupport.supported_drivers['KML'] = 'rw'
 
-# 2. Função para carregar o ficheiro CSS externo
+st.set_page_config(page_title="Obras Ampliação", page_icon="🚧", layout="wide")
+
+# 1. Funções de Carregamento (CSS e Imagens)
 def carregar_css(arquivo_css):
-    with open(arquivo_css) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    try:
+        with open(arquivo_css) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        pass
 
-try:
-    carregar_css("style.css")
-except FileNotFoundError:
-    pass # Ignora silenciosamente se o CSS ainda não estiver na pasta
+carregar_css("style.css")
 
-# 3. Função para carregar imagens locais para o HTML
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, 'rb') as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
-# Tenta carregar as imagens das logos
 img_minas_goias = ""
 img_cerrado = ""
-
 if os.path.exists("Ecovias Minas Goias_Logo (1).png"):
     img_minas_goias = f"data:image/png;base64,{get_base64_of_bin_file('Ecovias Minas Goias_Logo (1).png')}"
-    
 if os.path.exists("Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png"):
     img_cerrado = f"data:image/png;base64,{get_base64_of_bin_file('Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png')}"
 
-# Renderizando o Cabeçalho Superior com as imagens reais
+# 2. Cabeçalho Superior
 st.markdown(f"""
     <div class="cabecalho">
         <h1>OBRAS AMPLIAÇÃO</h1>
@@ -47,60 +45,72 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 4. Barra Lateral (PAINEL DE CONTROLE)
-st.sidebar.markdown("### PAINEL DE CONTROLE")
+# 3. Navegação Principal (Abas Horizontais)
+aba_resumo, aba_cerrado, aba_minas = st.tabs(["QUADRO DE RESUMO", "CERRADO (ECC)", "MINAS GOIÁS (EMG)"])
 
-concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
+# --- ABA 1: QUADRO DE RESUMO ---
+with aba_resumo:
+    st.subheader("RESUMO")
+    
+    # Divide a tela em duas colunas (Esquerda: Gráficos | Direita: Indicadores)
+    col_esquerda, col_direita = st.columns([2, 1])
+    
+    with col_esquerda:
+        # Área verde clara para os gráficos
+        st.markdown('<div class="caixa-verde-clara" style="height: 400px; display:flex; align-items:center; justify-content:center;"><i>[INSERIR GRÁFICOS DE RESUMO AQUI]</i></div>', unsafe_allow_html=True)
 
-# Lógica dinâmica: Contorno Uberlândia aparece APENAS na concessão Minas Goiás
-if concessao == "Minas Goiás":
-    opcoes_estado = ["Minas", "Goiás", "Contorno Uberlândia"]
-else:
-    opcoes_estado = ["Minas", "Goiás"]
+    with col_direita:
+        # Bloco "EM ANDAMENTO"
+        st.markdown('<div class="titulo-verde">EM ANDAMENTO</div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
+        with c2: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
+        
+        st.write("") # Espaçamento
+        
+        # Bloco "PREVISTO A INICIAR"
+        st.markdown('<div class="titulo-verde">PREVISTO A INICIAR</div>', unsafe_allow_html=True)
+        c3, c4 = st.columns(2)
+        with c3: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
+        with c4: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
 
-estado = st.sidebar.selectbox("ESTADO / REGIÃO", opcoes_estado)
+    st.divider()
 
-# Define os limites apenas para o tooltip (ajuda visual do campo KM - ícone de '?')
-dica_km = "Digite o KM desejado."
-if concessao == "Minas Goiás":
-    if estado == "Minas":
-        dica_km = "Limites: KM 207+300 ao 77+400 e KM 65+473 ao 00+000"
-    elif estado == "Goiás":
-        dica_km = "Limites: KM 314+000 ao 95+700"
-    elif estado == "Contorno Uberlândia":
-        dica_km = "Limites: KM 00+000 ao 21+000"
+    # --- SEÇÃO DO MAPA ---
+    st.subheader("MAPA DE OBRAS")
+    
+    # Coluna maior para o mapa, coluna menor para o menu retrátil à direita
+    col_mapa, col_menu_mapa = st.columns([3, 1])
+    
+    with col_mapa:
+        st.markdown('<div class="caixa-verde-clara" style="height: 500px; display:flex; align-items:center; justify-content:center;">', unsafe_allow_html=True)
+        arquivo_kml = st.file_uploader("Upload KML/KMZ", type=["kml", "kmz"], key="kml_resumo")
+        
+        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6)
+        if arquivo_kml:
+            st.success("Mapa pronto para renderização.")
+            # Lógica de processamento do KML entraria aqui
+        
+        st_folium(mapa, width="100%", height=400)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# Inputs reordenados (KM em cima, OBRA em baixo)
-km = st.sidebar.text_input("KM", placeholder="Ex: 120+500", help=dica_km)
-obra = st.sidebar.text_input("OBRA", placeholder="Digite a obra...")
+    with col_menu_mapa:
+        # Área verde escura do menu lateral do mapa
+        st.markdown("""
+            <div class="menu-lateral-mapa">
+                <div style="text-align: right; color: white;">☰</div>
+                <br><br>
+                <i>[CONSTRUIR PAINEL DE NAVEGAÇÃO DESSA ABA - ABA RETRÁTIL]</i>
+            </div>
+        """, unsafe_allow_html=True)
 
-# 5. Integração com os dados do BI - AMPLIAÇÃO
-@st.cache_data
-def carregar_dados():
-    arquivos = [f for f in os.listdir('.') if "BI - AMPLIAÇÃO" in f]
-    if arquivos:
-        caminho_arquivo = arquivos[0]
-        try:
-            if caminho_arquivo.endswith('.xlsx') or caminho_arquivo.endswith('.xls'):
-                df = pd.read_excel(caminho_arquivo)
-            else:
-                df = pd.read_csv(caminho_arquivo)
-            return df
-        except Exception as e:
-            st.error(f"Erro ao ler o ficheiro: {e}")
-            return pd.DataFrame()
-    return pd.DataFrame()
 
-df = carregar_dados()
+# --- ABA 2: CERRADO (ECC) ---
+with aba_cerrado:
+    st.write("### Conteúdo Específico: Cerrado (ECC)")
+    st.info("Aqui entrarão os dados filtrados apenas para a concessão Cerrado da planilha BI - AMPLIAÇÃO.")
 
-# 6. Área Central (Exibição)
-st.write("### Resumo do Filtro Atual")
-st.success(f"**Concessão:** {concessao} | **Estado:** {estado} | **KM:** {km if km else 'Não informado'} | **Obra:** {obra if obra else 'Não informada'}")
-
-st.divider()
-
-if not df.empty:
-    st.write("✅ **Dados carregados com sucesso a partir do ficheiro BI - AMPLIAÇÃO!**")
-    st.dataframe(df, use_container_width=True)
-else:
-    st.info("O ficheiro **BI - AMPLIAÇÃO** não foi encontrado na pasta ou está vazio.")
+# --- ABA 3: MINAS GOIÁS (EMG) ---
+with aba_minas:
+    st.write("### Conteúdo Específico: Minas Goiás (EMG)")
+    st.info("Aqui entrarão os dados filtrados apenas para a concessão Minas Goiás da planilha BI - AMPLIAÇÃO.")
