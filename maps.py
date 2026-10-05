@@ -3,36 +3,20 @@ import folium
 from streamlit_folium import st_folium
 import zipfile
 import xml.etree.ElementTree as ET
-import requests
 import os
 
-def tentar_baixar_sharepoint(url):
-    """Tenta baixar o KMZ do SharePoint forçando o parâmetro de download"""
-    url_download = url.split("?")[0] + "?download=1"
-    try:
-        # Timeout curto para não travar a aplicação se pedir login corporativo
-        response = requests.get(url_download, timeout=5)
-        # Se for um ficheiro real (e não a página HTML de login da Microsoft)
-        if response.status_code == 200 and not b"<html" in response.content[:100].lower():
-            caminho_temp = "temp_sharepoint.kmz"
-            with open(caminho_temp, "wb") as f:
-                f.write(response.content)
-            return caminho_temp
-    except:
-        pass
-    return None
-
-def extrair_linhas_kmz(caminho_arquivo):
-    """Lê o KMZ como um ZIP, extrai o KML e varre as tags <coordinates>"""
+def extrair_linhas_kmz(arquivo):
+    """Abre o ficheiro KMZ, extrai o KML de dentro do ZIP e lê as coordenadas"""
     linhas = []
     try:
-        with zipfile.ZipFile(caminho_arquivo, 'r') as z:
+        with zipfile.ZipFile(arquivo, 'r') as z:
+            # Encontra o ficheiro KML escondido dentro do KMZ
             kml_name = [f for f in z.namelist() if f.endswith('.kml')][0]
             kml_data = z.read(kml_name)
             
         root = ET.fromstring(kml_data)
         
-        # Varre a árvore XML em busca de coordenadas ignorando namespaces
+        # Varre o XML em busca de tags de coordenadas geográficas
         for elem in root.iter():
             if 'coordinates' in elem.tag and elem.text:
                 coords = elem.text.strip().split()
@@ -40,49 +24,71 @@ def extrair_linhas_kmz(caminho_arquivo):
                 for c in coords:
                     partes = c.split(',')
                     if len(partes) >= 2:
-                        # O Folium renderiza mapas no padrão [Latitude, Longitude]
+                        # Folium requer a ordem [Latitude, Longitude]
                         linha.append([float(partes[1]), float(partes[0])])
                 if linha:
                     linhas.append(linha)
     except Exception as e:
-        st.error(f"Erro ao extrair geometrias do KMZ: {e}")
+        st.error(f"Erro ao ler o ficheiro KMZ: {e}")
     return linhas
 
-def renderizar_secao_mapa():
-    """Função principal que será chamada pelo app.py"""
-    st.markdown('<div class="caixa-verde-clara" style="height: 500px; display:flex; align-items:center; justify-content:center;">', unsafe_allow_html=True)
+def renderizar_painel_mapa():
+    """Constrói o quadro do mapa e o menu lateral de projetos"""
+    st.subheader("MAPA DE OBRAS")
     
-    url_sharepoint = "https://grupoecorodovias-my.sharepoint.com/:u:/g/personal/vitor_r_silva_ecovias_com_br/IQBaIUMlc9GIRry8sGWW4mXJAXfSOIW8N2n_7g2POHDOs9o?e=3QttES"
-    arquivo_local = "KMZ-TH15-149+000_150+600.kmz"
-    caminho_kmz = None
+    # Divide a tela: Quadro do mapa (largo) e Menu (estreito)
+    col_mapa, col_menu = st.columns([3, 1])
     
-    # 1. Tentativa de conexão com a Nuvem
-    kmz_baixado = tentar_baixar_sharepoint(url_sharepoint)
-    
-    # 2. Definição da origem dos dados
-    if kmz_baixado:
-        caminho_kmz = kmz_baixado
-        st.success("Traçado lido via SharePoint com sucesso!")
-    elif os.path.exists(arquivo_local):
-        caminho_kmz = arquivo_local
-        st.success(f"Lido a partir do ficheiro local: {arquivo_local}")
-    else:
-        st.warning(f"O SharePoint bloqueou o acesso sem credenciais e o ficheiro {arquivo_local} não foi encontrado na pasta do GitHub.")
+    kmz_para_exibir = None
+
+    # --- MENU LATERAL DIREITO ---
+    with col_menu:
+        st.markdown("#### 📂 Biblioteca de KMZs")
+        st.caption("Projetos vinculados a esta secção.")
         
-    # 3. Criação do Mapa Folium Base
-    mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6)
-    
-    # 4. Injeção do Traçado
-    if caminho_kmz:
-        linhas_tracado = extrair_linhas_kmz(caminho_kmz)
+        # 1. Procura ficheiros KMZ que você já deixou na pasta do GitHub
+        kmzs_locais = [f for f in os.listdir('.') if f.endswith('.kmz')]
         
-        for linha in linhas_tracado:
-            folium.PolyLine(linha, color="#179C33", weight=5, opacity=0.8).add_to(mapa)
+        # 2. Caixa suspensa para escolher qual ficheiro visualizar
+        projeto_selecionado = st.selectbox(
+            "Projetos na Pasta:", 
+            ["Nenhum"] + kmzs_locais
+        )
         
-        # Foca a câmara automaticamente na primeira coordenada encontrada
-        if linhas_tracado and linhas_tracado[0]:
-            mapa.location = linhas_tracado[0][0]
-            mapa.zoom_start = 14
+        st.divider()
+        
+        # 3. Opção de carregar um projeto novo na hora (Upload)
+        st.markdown("**Testar outro ficheiro?**")
+        arquivo_upado = st.file_uploader("Upload de novo KMZ", type=["kmz"], label_visibility="collapsed")
+        
+        # Lógica de prioridade: O ficheiro carregado na hora sobrepõe a seleção da lista
+        if arquivo_upado:
+            kmz_para_exibir = arquivo_upado
+            st.success(f"A ler: {arquivo_upado.name}")
+        elif projeto_selecionado != "Nenhum":
+            kmz_para_exibir = projeto_selecionado
+
+    # --- QUADRO DO MAPA ---
+    with col_mapa:
+        st.markdown('<div class="caixa-verde-clara">', unsafe_allow_html=True)
+        
+        # Configuração do mapa focado na região central
+        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6, tiles="CartoDB positron")
+        
+        if kmz_para_exibir:
+            linhas = extrair_linhas_kmz(kmz_para_exibir)
             
-    st_folium(mapa, width="100%", height=400)
-    st.markdown('</div>', unsafe_allow_html=True)
+            if linhas:
+                for linha in linhas:
+                    folium.PolyLine(linha, color="#179C33", weight=5, opacity=0.9).add_to(mapa)
+                
+                # Foca o mapa automaticamente nas coordenadas do projeto escolhido
+                mapa.location = linhas[0][0]
+                mapa.zoom_start = 14
+            else:
+                st.warning("O KMZ selecionado não contém linhas/traçados legíveis.")
+        else:
+            st.info("👈 Selecione ou faça o upload de um projeto KMZ no painel ao lado para visualizar o traçado.")
+            
+        st_folium(mapa, width="100%", height=500)
+        st.markdown('</div>', unsafe_allow_html=True)
