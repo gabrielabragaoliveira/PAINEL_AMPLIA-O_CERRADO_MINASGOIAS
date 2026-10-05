@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import base64
-import maps  # Importa o ficheiro maps.py que criámos para processar o KMZ
+import maps
 
 # 1. Configuração inicial da página
 st.set_page_config(
@@ -117,7 +117,7 @@ with aba_resumo:
         with c3: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
         with c4: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
 
-   st.divider()
+    st.divider()
 
     # --- SEÇÃO DO MAPA ---
     # A estrutura visual do mapa e do menu lateral agora é gerida integralmente pelo maps.py
@@ -127,7 +127,6 @@ with aba_resumo:
 with aba_cerrado:
     st.write("### Conteúdo Específico: Cerrado (ECC)")
     if not df.empty:
-        # Aqui pode futuramente filtrar o dataframe apenas para a concessão Cerrado
         st.dataframe(df, use_container_width=True)
     else:
         st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
@@ -136,7 +135,6 @@ with aba_cerrado:
 with aba_minas:
     st.write("### Conteúdo Específico: Minas Goiás (EMG)")
     if not df.empty:
-         # Aqui pode futuramente filtrar o dataframe apenas para a concessão Minas Goiás
         st.dataframe(df, use_container_width=True)
     else:
         st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
