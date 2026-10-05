@@ -1,49 +1,18 @@
+/* =========================================
+   1. ESTILOS DA BARRA LATERAL (SIDEBAR)
+   ========================================= */
 /* Cor de fundo da barra lateral (Verde) */
 [data-testid="stSidebar"] {
     background-color: #179C33;
 }
 
 /* Texto da barra lateral em branco */
-[data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
+[data-testid="stSidebar"] h3, 
+[data-testid="stSidebar"] label, 
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] .stMarkdown {
     color: white !important;
     font-weight: bold;
-}
-
-/* Cabeçalho superior verde */
-.cabecalho {
-    background-color: #179C33;
-    padding: 20px 30px;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.cabecalho h1 {
-    margin: 0;
-    color: white;
-    font-size: 36px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-/* Estilo dos selos dos logos no cabeçalho */
-.logos {
-    display: flex;
-    gap: 15px;
-}
-
-.logo-badge {
-    background-color: white;
-    color: #179C33;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-weight: bold;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 /* Fundos das caixas de seleção na barra lateral */
@@ -59,15 +28,55 @@ div[data-baseweb="select"] > div {
     border-radius: 5px;
 }
 
-/* Caixas de fundo verde muito claro */
+/* =========================================
+   2. ESTILOS DO CABEÇALHO (HEADER)
+   ========================================= */
+.cabecalho {
+    background-color: #179C33;
+    padding: 20px 30px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    overflow: hidden; /* Evita que o conteúdo vaze os limites da caixa */
+}
+
+.cabecalho h1 {
+    margin: 0;
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap; /* IMPEDE A QUEBRA DA PALAVRA "AMPLIAÇÃO" */
+}
+
+.logos {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.logo-img {
+    height: 50px;
+    object-fit: contain;
+    background-color: white;
+    padding: 5px 15px;
+    border-radius: 25px;
+}
+
+/* =========================================
+   3. ESTILOS DOS CARTÕES E INDICADORES (RESUMO)
+   ========================================= */
+/* Caixas de fundo verde muito claro (Área de Gráficos e Mapa) */
 .caixa-verde-clara {
-    background-color: #e6f9e6; /* Tom verde bem clarinho */
+    background-color: #e6f9e6; 
     border-radius: 10px;
     padding: 20px;
     border: 1px solid #c3e6c3;
 }
 
-/* Títulos das seções da direita (EM ANDAMENTO, PREVISTO) */
+/* Títulos das seções da direita (EM ANDAMENTO, PREVISTO A INICIAR) */
 .titulo-verde {
     background-color: #28a745;
     color: white;
@@ -84,13 +93,18 @@ div[data-baseweb="select"] > div {
     border-radius: 10px;
     padding: 30px 10px;
     text-align: center;
-    color: #cc3333; /* Texto em vermelho como no mockup */
+    color: #cc3333; /* Texto em vermelho itálico conforme referência */
     font-style: italic;
     border: 1px solid #c3e6c3;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Menu lateral verde escuro colado no mapa */
+/* =========================================
+   4. ESTILOS DO MENU LATERAL DO MAPA
+   ========================================= */
 .menu-lateral-mapa {
     background-color: #66cc66;
     color: #cc3333; /* Texto vermelho itálico */
@@ -101,17 +115,22 @@ div[data-baseweb="select"] > div {
     font-style: italic;
 }
 
-/* Estilo das Abas nativas do Streamlit para combinar com o layout */
+/* =========================================
+   5. ESTILOS DAS ABAS (TABS) HORIONTAIS
+   ========================================= */
+/* Espaçamento entre as abas */
 .stTabs [data-baseweb="tab-list"] {
     gap: 10px;
 }
 
+/* Aparência das abas inativas (Fundo cinza claro) */
 .stTabs [data-baseweb="tab"] {
     background-color: #f0f0f0;
     border-radius: 5px 5px 0px 0px;
     padding: 10px 20px;
 }
 
+/* Aparência da aba selecionada/ativa (Fundo verde, linha verde escura) */
 .stTabs [aria-selected="true"] {
     background-color: #e6f9e6;
     border-bottom: 3px solid #179C33;
