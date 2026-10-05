@@ -1,74 +1,60 @@
-/* Cor de fundo da barra lateral (Verde) */
-[data-testid="stSidebar"] {
-    background-color: #179C33;
+/* (Mantenha o CSS anterior do cabeçalho) */
+
+/* Caixas de fundo verde muito claro */
+.caixa-verde-clara {
+    background-color: #e6f9e6; /* Tom verde bem clarinho */
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #c3e6c3;
 }
 
-/* Texto da barra lateral em branco */
-[data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
-    color: white !important;
-    font-weight: bold;
-}
-
-/* Cabeçalho superior verde */
-.cabecalho {
-    background-color: #179C33;
-    padding: 20px 30px;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
-
-.cabecalho h1 {
-    margin: 0;
+/* Títulos das seções da direita (EM ANDAMENTO, PREVISTO) */
+.titulo-verde {
+    background-color: #28a745;
     color: white;
-    font-size: 36px;
+    text-align: center;
     font-weight: bold;
-    text-transform: uppercase;
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 10px;
 }
 
-/* Estilo dos selos dos logos no cabeçalho */
-.logos {
-    display: flex;
-    gap: 15px;
+/* Caixas dos indicadores numéricos */
+.caixa-indicador {
+    background-color: #e6f9e6;
+    border-radius: 10px;
+    padding: 30px 10px;
+    text-align: center;
+    color: #cc3333; /* Texto em vermelho como no mockup */
+    font-style: italic;
+    border: 1px solid #c3e6c3;
+    height: 100%;
 }
 
-.logo-badge {
-    background-color: white;
-    color: #179C33;
+/* Menu lateral verde escuro colado no mapa */
+.menu-lateral-mapa {
+    background-color: #66cc66;
+    color: #cc3333; /* Texto vermelho itálico */
+    border-radius: 10px;
+    padding: 15px;
+    height: 500px;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Estilo das Abas nativas do Streamlit para combinar com o layout */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: #f0f0f0;
+    border-radius: 5px 5px 0px 0px;
     padding: 10px 20px;
-    border-radius: 30px;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: #e6f9e6;
+    border-bottom: 3px solid #179C33;
     font-weight: bold;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Fundos das caixas de seleção na barra lateral */
-div[data-baseweb="select"] > div {
-    background-color: white;
-    border-radius: 5px;
-}
-
-/* Fundo das caixas de texto (Obra e KM) na barra lateral */
-.stTextInput input {
-    background-color: white;
-    color: black !important;
-    border-radius: 5px;
-}
-/* Estilo das imagens dos logos no cabeçalho */
-.logos {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
-
-.logo-img {
-    height: 50px; /* Ajuste a altura conforme necessário para caber bem no cabeçalho */
-    object-fit: contain;
-    background-color: white; /* Fundo branco para destacar o logo verde no fundo verde */
-    padding: 5px 15px;
-    border-radius: 25px;
 }
