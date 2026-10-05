@@ -5,58 +5,73 @@ import zipfile
 import xml.etree.ElementTree as ET
 import os
 
-def extrair_linhas_kmz(arquivo):
-    """Abre o ficheiro KMZ, extrai o KML e calcula os limites exatos (bounds) da obra"""
-    linhas = []
-    bounds = None
+def extrair_elementos_kmz(arquivo):
+    """Abre o ficheiro KMZ, extrai Linhas, Pontos e os Limites exatos da obra"""
+    elementos = {'linhas': [], 'pontos': []}
+    bounds = [[float('inf'), float('inf')], [float('-inf'), float('-inf')]] # [min_lat, min_lon], [max_lat, max_lon]
+    tem_coordenadas = False
+
     try:
         with zipfile.ZipFile(arquivo, 'r') as z:
-            # Encontra o ficheiro KML escondido dentro do KMZ
             kml_name = [f for f in z.namelist() if f.endswith('.kml')][0]
             kml_data = z.read(kml_name)
             
         root = ET.fromstring(kml_data)
         
-        # Variáveis para calcular a "caixa" (bounding box) que envolve toda a obra
-        min_lat, max_lat = float('inf'), float('-inf')
-        min_lon, max_lon = float('inf'), float('-inf')
-        
-        # Varre o XML em busca de tags de coordenadas geográficas
-        for elem in root.iter():
-            if 'coordinates' in elem.tag and elem.text:
-                # Remove quebras de linha que costumam corromper ficheiros exportados de CAD/Civil 3D
-                coords_limpas = elem.text.replace('\n', ' ').strip()
-                coords = coords_limpas.split()
+        # Varre cada Placemark (Pasta de marcação do Google Earth)
+        for placemark in root.iter():
+            if placemark.tag.endswith('Placemark'):
                 
-                linha = []
-                for c in coords:
-                    partes = c.split(',')
-                    if len(partes) >= 2:
-                        lon = float(partes[0].strip())
-                        lat = float(partes[1].strip())
-                        linha.append([lat, lon]) # Folium requer a ordem [Latitude, Longitude]
-                        
-                        # Atualiza os limites extremos da obra para o zoom automático
-                        if lat < min_lat: min_lat = lat
-                        if lat > max_lat: max_lat = lat
-                        if lon < min_lon: min_lon = lon
-                        if lon > max_lon: max_lon = lon
-                        
-                if linha:
-                    linhas.append(linha)
-        
-        # Se encontrou coordenadas válidas, cria a caixa de limites
-        if linhas:
-            bounds = [[min_lat, min_lon], [max_lat, max_lon]]
-            
+                # Tenta capturar o nome do ponto/linha para mostrar no mapa
+                nome_elemento = "Pino/Traçado"
+                for name_tag in placemark.iter():
+                    if name_tag.tag.endswith('name') and name_tag.text:
+                        nome_elemento = name_tag.text
+                        break
+
+                # 1. Procura por Pontos (Pinos)
+                for point in placemark.iter():
+                    if point.tag.endswith('Point'):
+                        for coords in point.iter():
+                            if coords.tag.endswith('coordinates') and coords.text:
+                                c = coords.text.strip().split(',')
+                                if len(c) >= 2:
+                                    lon, lat = float(c[0].strip()), float(c[1].strip())
+                                    elementos['pontos'].append({'nome': nome_elemento, 'coord': [lat, lon]})
+                                    
+                                    bounds[0][0], bounds[0][1] = min(bounds[0][0], lat), min(bounds[0][1], lon)
+                                    bounds[1][0], bounds[1][1] = max(bounds[1][0], lat), max(bounds[1][1], lon)
+                                    tem_coordenadas = True
+
+                # 2. Procura por Linhas (Traçados)
+                for linestring in placemark.iter():
+                    if linestring.tag.endswith('LineString'):
+                        for coords in linestring.iter():
+                            if coords.tag.endswith('coordinates') and coords.text:
+                                coords_limpas = coords.text.replace('\n', ' ').strip()
+                                pares = coords_limpas.split()
+                                linha = []
+                                for p in pares:
+                                    c = p.split(',')
+                                    if len(c) >= 2:
+                                        lon, lat = float(c[0].strip()), float(c[1].strip())
+                                        linha.append([lat, lon])
+                                        
+                                        bounds[0][0], bounds[0][1] = min(bounds[0][0], lat), min(bounds[0][1], lon)
+                                        bounds[1][0], bounds[1][1] = max(bounds[1][0], lat), max(bounds[1][1], lon)
+                                        tem_coordenadas = True
+                                        
+                                if linha:
+                                    elementos['linhas'].append({'nome': nome_elemento, 'coords': linha})
+
     except Exception as e:
         st.error(f"Erro ao ler o ficheiro KMZ: {e}")
         
-    return linhas, bounds
+    return elementos, (bounds if tem_coordenadas else None)
 
 def renderizar_painel_mapa():
-    """Constrói o quadro do mapa e o menu lateral de projetos"""
-    st.subheader("MAPA DE OBRAS")
+    """Constrói o quadro do mapa de satélite e o menu lateral"""
+    st.subheader("MAPA DE OBRAS (VISUALIZAÇÃO SATÉLITE)")
     
     col_mapa, col_menu = st.columns([3, 1])
     kmz_para_exibir = None
@@ -66,7 +81,6 @@ def renderizar_painel_mapa():
         st.markdown("#### 📂 Biblioteca de KMZs")
         st.caption("Projetos vinculados a esta secção.")
         
-        # Procura ficheiros KMZ locais
         kmzs_locais = [f for f in os.listdir('.') if f.endswith('.kmz')]
         projeto_selecionado = st.selectbox("Projetos na Pasta:", ["Nenhum"] + kmzs_locais)
         
@@ -84,25 +98,45 @@ def renderizar_painel_mapa():
     with col_mapa:
         st.markdown('<div class="caixa-verde-clara">', unsafe_allow_html=True)
         
-        # Mapa base (sem as marcas d'água de API Key)
-        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6, tiles="OpenStreetMap")
+        # Mapa base de Satélite (Esri World Imagery - Alta Resolução)
+        mapa = folium.Map(
+            location=[-17.0, -49.0], 
+            zoom_start=6, 
+            tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            attr='Esri World Imagery'
+        )
         
         if kmz_para_exibir:
-            # Chama a função que agora devolve tanto as linhas como os limites
-            linhas, bounds = extrair_linhas_kmz(kmz_para_exibir)
+            elementos, bounds = extrair_elementos_kmz(kmz_para_exibir)
             
-            if linhas:
-                # Desenha o traçado da rodovia no mapa
-                for linha in linhas:
-                    folium.PolyLine(linha, color="#179C33", weight=5, opacity=0.9).add_to(mapa)
+            if elementos['linhas'] or elementos['pontos']:
                 
-                # CÂMARA AUTOMÁTICA: Obriga o mapa a fazer zoom exatamente no retângulo da obra
+                # Renderiza as linhas em Amarelo para destacar sobre o fundo de satélite
+                for linha in elementos['linhas']:
+                    folium.PolyLine(
+                        linha['coords'], 
+                        color="#FFD700", # Amarelo Ouro
+                        weight=5, 
+                        opacity=0.9,
+                        tooltip=f"Traçado: {linha['nome']}"
+                    ).add_to(mapa)
+                
+                # Renderiza os Pinos com popups clicáveis
+                for ponto in elementos['pontos']:
+                    folium.Marker(
+                        location=ponto['coord'],
+                        popup=ponto['nome'],
+                        tooltip="Clique para ver o pino",
+                        icon=folium.Icon(color='red', icon='info-sign')
+                    ).add_to(mapa)
+                
+                # Foca o mapa na obra
                 if bounds:
                     mapa.fit_bounds(bounds)
             else:
-                st.warning("O KMZ selecionado não contém traçados legíveis (apenas pontos ou ficheiro vazio).")
+                st.warning("O KMZ selecionado não contém traçados ou pinos legíveis.")
         else:
-            st.info("👈 Selecione ou faça o upload de um projeto KMZ no painel ao lado para visualizar o traçado.")
+            st.info("👈 Selecione ou faça o upload de um projeto KMZ no painel ao lado.")
             
         st_folium(mapa, width="100%", height=500)
         st.markdown('</div>', unsafe_allow_html=True)
