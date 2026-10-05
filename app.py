@@ -1,14 +1,17 @@
 import streamlit as st
 import pandas as pd
-import folium
-from streamlit_folium import st_folium
 import os
 import base64
-import json
+import maps  # Importa o ficheiro maps.py que criámos para processar o KMZ
 
-st.set_page_config(page_title="Obras Ampliação", page_icon="🚧", layout="wide")
+# 1. Configuração inicial da página
+st.set_page_config(
+    page_title="Obras Ampliação",
+    page_icon="🚧",
+    layout="wide"
+)
 
-# 1. Funções de Carregamento (CSS e Imagens)
+# 2. Funções de Carregamento (CSS e Imagens)
 def carregar_css(arquivo_css):
     try:
         with open(arquivo_css) as f:
@@ -23,6 +26,7 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
+# Tenta carregar as imagens das logos
 img_minas_goias = ""
 img_cerrado = ""
 if os.path.exists("Ecovias Minas Goias_Logo (1).png"):
@@ -30,7 +34,7 @@ if os.path.exists("Ecovias Minas Goias_Logo (1).png"):
 if os.path.exists("Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png"):
     img_cerrado = f"data:image/png;base64,{get_base64_of_bin_file('Ecovias_Cerrado_Logo_Vertical_RGB_Preferencial_20241212_Keenwork_AF.png')}"
 
-# 2. Cabeçalho Superior
+# 3. Cabeçalho Superior
 st.markdown(f"""
     <div class="cabecalho">
         <h1>OBRAS AMPLIAÇÃO</h1>
@@ -41,11 +45,12 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. Barra Lateral (PAINEL DE CONTROLE) Retomada
+# 4. Barra Lateral (PAINEL DE CONTROLE)
 st.sidebar.markdown("### PAINEL DE CONTROLE")
 
 concessao = st.sidebar.selectbox("CONCESSÃO", ["Cerrado", "Minas Goiás"])
 
+# Lógica dinâmica: Contorno Uberlândia aparece APENAS na concessão Minas Goiás
 if concessao == "Minas Goiás":
     opcoes_estado = ["Minas", "Goiás", "Contorno Uberlândia"]
 else:
@@ -53,6 +58,7 @@ else:
 
 estado = st.sidebar.selectbox("ESTADO / REGIÃO", opcoes_estado)
 
+# Tooltip dinâmico para os limites do KM
 dica_km = "Digite o KM desejado."
 if concessao == "Minas Goiás":
     if estado == "Minas":
@@ -65,11 +71,12 @@ if concessao == "Minas Goiás":
 km = st.sidebar.text_input("KM", placeholder="Ex: 120+500", help=dica_km)
 obra = st.sidebar.text_input("OBRA", placeholder="Digite a obra...")
 
-# Upload do Arquivo de Dados
+# Upload da Base de Dados
 st.sidebar.markdown("---")
 st.sidebar.markdown("**BASE DE DADOS:**")
 arquivo_upado = st.sidebar.file_uploader("Upload do BI - AMPLIAÇÃO", type=["xlsx", "xls", "csv"])
 
+# Processamento dos dados na memória
 @st.cache_data
 def processar_arquivo(upload):
     if upload is not None:
@@ -80,13 +87,13 @@ def processar_arquivo(upload):
                 df = pd.read_excel(upload)
             return df
         except Exception as e:
-            st.sidebar.error(f"Erro ao processar: {e}")
+            st.sidebar.error(f"Erro ao processar a planilha: {e}")
             return pd.DataFrame()
     return pd.DataFrame()
 
 df = processar_arquivo(arquivo_upado)
 
-# 4. Navegação Principal (Abas Horizontais)
+# 5. Navegação Principal (Abas Horizontais)
 aba_resumo, aba_cerrado, aba_minas = st.tabs(["QUADRO DE RESUMO", "CERRADO (ECC)", "MINAS GOIÁS (EMG)"])
 
 # --- ABA 1: QUADRO DE RESUMO ---
@@ -103,7 +110,7 @@ with aba_resumo:
         with c1: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
         with c2: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
         
-        st.write("")
+        st.write("") # Espaçamento
         
         st.markdown('<div class="titulo-verde">PREVISTO A INICIAR</div>', unsafe_allow_html=True)
         c3, c4 = st.columns(2)
@@ -117,28 +124,15 @@ with aba_resumo:
     col_mapa, col_menu_mapa = st.columns([3, 1])
     
     with col_mapa:
-        st.markdown('<div class="caixa-verde-clara" style="height: 500px; display:flex; align-items:center; justify-content:center;">', unsafe_allow_html=True)
-        
-        arquivo_geo = st.file_uploader("Upload Traçado (GeoJSON)", type=["geojson", "json"], key="geo_resumo")
-        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6)
-        
-        if arquivo_geo:
-            try:
-                geo_data = json.load(arquivo_geo)
-                folium.GeoJson(geo_data, style_function=lambda feature: {'color': '#179C33', 'weight': 3}).add_to(mapa)
-                st.success("Mapa renderizado com sucesso!")
-            except Exception as e:
-                st.error(f"Erro ao processar o arquivo: {e}")
-        
-        st_folium(mapa, width="100%", height=400)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Chama a lógica de mapa que foi isolada no arquivo maps.py
+        maps.renderizar_secao_mapa()
 
     with col_menu_mapa:
         st.markdown("""
             <div class="menu-lateral-mapa">
                 <div style="text-align: right; color: white;">☰</div>
                 <br><br>
-                <i>[MENU DO MAPA]</i>
+                <i>[CONSTRUIR PAINEL DE NAVEGAÇÃO DESSA ABA - ABA RETRÁTIL]</i>
             </div>
         """, unsafe_allow_html=True)
 
@@ -146,14 +140,16 @@ with aba_resumo:
 with aba_cerrado:
     st.write("### Conteúdo Específico: Cerrado (ECC)")
     if not df.empty:
+        # Aqui pode futuramente filtrar o dataframe apenas para a concessão Cerrado
         st.dataframe(df, use_container_width=True)
     else:
-        st.info("Faça o upload da base de dados na barra lateral.")
+        st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
 
 # --- ABA 3: MINAS GOIÁS (EMG) ---
 with aba_minas:
     st.write("### Conteúdo Específico: Minas Goiás (EMG)")
     if not df.empty:
+         # Aqui pode futuramente filtrar o dataframe apenas para a concessão Minas Goiás
         st.dataframe(df, use_container_width=True)
     else:
-        st.info("Faça o upload da base de dados na barra lateral.")
+        st.info("👈 Por favor, faça o upload do ficheiro BI - AMPLIAÇÃO na barra lateral para visualizar os dados.")
