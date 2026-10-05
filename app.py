@@ -117,24 +117,11 @@ with aba_resumo:
         with c3: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
         with c4: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
 
-    st.divider()
+   st.divider()
 
     # --- SEÇÃO DO MAPA ---
-    st.subheader("MAPA DE OBRAS")
-    col_mapa, col_menu_mapa = st.columns([3, 1])
-    
-    with col_mapa:
-        # Chama a lógica de mapa que foi isolada no arquivo maps.py
-        maps.renderizar_secao_mapa()
-
-    with col_menu_mapa:
-        st.markdown("""
-            <div class="menu-lateral-mapa">
-                <div style="text-align: right; color: white;">☰</div>
-                <br><br>
-                <i>[CONSTRUIR PAINEL DE NAVEGAÇÃO DESSA ABA - ABA RETRÁTIL]</i>
-            </div>
-        """, unsafe_allow_html=True)
+    # A estrutura visual do mapa e do menu lateral agora é gerida integralmente pelo maps.py
+    maps.renderizar_painel_mapa()
 
 # --- ABA 2: CERRADO (ECC) ---
 with aba_cerrado:
