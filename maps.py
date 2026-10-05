@@ -72,8 +72,8 @@ def renderizar_painel_mapa():
     with col_mapa:
         st.markdown('<div class="caixa-verde-clara">', unsafe_allow_html=True)
         
-        # Configuração do mapa focado na região central
-        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6, tiles="CartoDB positron")
+        # Correção aplicada: Utilizando o OpenStreetMap, que é público e não requer API Key
+        mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6, tiles="OpenStreetMap")
         
         if kmz_para_exibir:
             linhas = extrair_linhas_kmz(kmz_para_exibir)
