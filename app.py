@@ -2,13 +2,9 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-import geopandas as gpd
-import fiona
 import os
 import base64
-
-# Habilita suporte KML
-fiona.drvsupport.supported_drivers['KML'] = 'rw'
+import json
 
 st.set_page_config(page_title="Obras Ampliação", page_icon="🚧", layout="wide")
 
@@ -52,23 +48,19 @@ aba_resumo, aba_cerrado, aba_minas = st.tabs(["QUADRO DE RESUMO", "CERRADO (ECC)
 with aba_resumo:
     st.subheader("RESUMO")
     
-    # Divide a tela em duas colunas (Esquerda: Gráficos | Direita: Indicadores)
     col_esquerda, col_direita = st.columns([2, 1])
     
     with col_esquerda:
-        # Área verde clara para os gráficos
         st.markdown('<div class="caixa-verde-clara" style="height: 400px; display:flex; align-items:center; justify-content:center;"><i>[INSERIR GRÁFICOS DE RESUMO AQUI]</i></div>', unsafe_allow_html=True)
 
     with col_direita:
-        # Bloco "EM ANDAMENTO"
         st.markdown('<div class="titulo-verde">EM ANDAMENTO</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
         with c2: st.markdown('<div class="caixa-indicador">[MINAS GOIÁS]</div>', unsafe_allow_html=True)
         
-        st.write("") # Espaçamento
+        st.write("")
         
-        # Bloco "PREVISTO A INICIAR"
         st.markdown('<div class="titulo-verde">PREVISTO A INICIAR</div>', unsafe_allow_html=True)
         c3, c4 = st.columns(2)
         with c3: st.markdown('<div class="caixa-indicador">[CERRADO]</div>', unsafe_allow_html=True)
@@ -79,23 +71,35 @@ with aba_resumo:
     # --- SEÇÃO DO MAPA ---
     st.subheader("MAPA DE OBRAS")
     
-    # Coluna maior para o mapa, coluna menor para o menu retrátil à direita
     col_mapa, col_menu_mapa = st.columns([3, 1])
     
     with col_mapa:
         st.markdown('<div class="caixa-verde-clara" style="height: 500px; display:flex; align-items:center; justify-content:center;">', unsafe_allow_html=True)
-        arquivo_kml = st.file_uploader("Upload KML/KMZ", type=["kml", "kmz"], key="kml_resumo")
+        
+        # Alterado para receber GeoJSON
+        arquivo_geo = st.file_uploader("Upload Traçado (GeoJSON)", type=["geojson", "json"], key="geo_resumo")
         
         mapa = folium.Map(location=[-17.0, -49.0], zoom_start=6)
-        if arquivo_kml:
-            st.success("Mapa pronto para renderização.")
-            # Lógica de processamento do KML entraria aqui
+        
+        if arquivo_geo:
+            try:
+                # Carrega nativamente pelo JSON do Python (sem Geopandas)
+                geo_data = json.load(arquivo_geo)
+                folium.GeoJson(
+                    geo_data,
+                    style_function=lambda feature: {
+                        'color': '#179C33',
+                        'weight': 3,
+                    }
+                ).add_to(mapa)
+                st.success("Mapa renderizado com sucesso!")
+            except Exception as e:
+                st.error(f"Erro ao processar o arquivo: {e}")
         
         st_folium(mapa, width="100%", height=400)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col_menu_mapa:
-        # Área verde escura do menu lateral do mapa
         st.markdown("""
             <div class="menu-lateral-mapa">
                 <div style="text-align: right; color: white;">☰</div>
