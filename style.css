@@ -1,4 +1,63 @@
-/* (Mantenha o CSS anterior do cabeçalho) */
+/* Cor de fundo da barra lateral (Verde) */
+[data-testid="stSidebar"] {
+    background-color: #179C33;
+}
+
+/* Texto da barra lateral em branco */
+[data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Cabeçalho superior verde */
+.cabecalho {
+    background-color: #179C33;
+    padding: 20px 30px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.cabecalho h1 {
+    margin: 0;
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Estilo dos selos dos logos no cabeçalho */
+.logos {
+    display: flex;
+    gap: 15px;
+}
+
+.logo-badge {
+    background-color: white;
+    color: #179C33;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Fundos das caixas de seleção na barra lateral */
+div[data-baseweb="select"] > div {
+    background-color: white;
+    border-radius: 5px;
+}
+
+/* Fundo das caixas de texto (Obra e KM) na barra lateral */
+.stTextInput input {
+    background-color: white;
+    color: black !important;
+    border-radius: 5px;
+}
 
 /* Caixas de fundo verde muito claro */
 .caixa-verde-clara {
